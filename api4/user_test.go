@@ -182,3 +182,58 @@ func TestUpdateUser(t *testing.T) {
 	_, resp = th.SystemAdminClient.UpdateUser(user)
 	CheckNoError(t, resp)
 }
+
+func TestUpdateUserPassword(t *testing.T) {
+	th := Setup().InitBasic()
+	Client := th.Client
+
+	password := "newpassword1"
+	_, resp := Client.UpdateUserPassword(th.BasicUser.Id, th.BasicUser.Password, password)
+	CheckNoError(t, resp)
+
+	_, resp = Client.UpdateUserPassword(th.BasicUser.Id, password, "")
+	CheckBadRequestStatus(t, resp)
+
+	_, resp = Client.UpdateUserPassword(th.BasicUser.Id, password, "junk")
+	CheckBadRequestStatus(t, resp)
+
+	_, resp = Client.UpdateUserPassword("junk", password, password)
+	CheckBadRequestStatus(t, resp)
+
+	_, resp = Client.UpdateUserPassword(th.BasicUser.Id, "", password)
+	CheckBadRequestStatus(t, resp)
+
+	_, resp = Client.UpdateUserPassword(th.BasicUser.Id, "junk", password)
+	CheckBadRequestStatus(t, resp)
+
+	_, resp = Client.UpdateUserPassword(th.BasicUser.Id, password, th.BasicUser.Password)
+	CheckNoError(t, resp)
+
+	Client.Logout()
+	_, resp = Client.UpdateUserPassword(th.BasicUser.Id, password, password)
+	CheckUnauthorizedStatus(t, resp)
+
+	th.LoginBasic2()
+	_, resp = Client.UpdateUserPassword(th.BasicUser.Id, password, password)
+	CheckForbiddenStatus(t, resp)
+
+	th.LoginBasic()
+
+	// Test lockout
+	passwordAttempts := utils.Cfg.ServiceSettings.MaximumLoginAttempts
+	defer func() {
+		utils.Cfg.ServiceSettings.MaximumLoginAttempts = passwordAttempts
+	}()
+	utils.Cfg.ServiceSettings.MaximumLoginAttempts = 2
+
+	// Fail twice
+	_, resp = Client.UpdateUserPassword(th.BasicUser.Id, "badpwd", "newpwd")
+	CheckBadRequestStatus(t, resp)
+	_, resp = Client.UpdateUserPassword(th.BasicUser.Id, "badpwd", "newpwd")
+	CheckBadRequestStatus(t, resp)
+
+	// Should fail because account is locked out
+	_, resp = Client.UpdateUserPassword(th.BasicUser.Id, th.BasicUser.Password, "newpwd")
+	CheckErrorMessage(t, resp, "api.user.check_user_login_attempts.too_many.app_error")
+	CheckForbiddenStatus(t, resp)
+}

@@ -151,7 +151,7 @@ func (me *TestHelper) LoginBasicWithClient(client *model.Client4) {
 
 func (me *TestHelper) LoginBasic2WithClient(client *model.Client4) {
 	utils.DisableDebugLogForTest()
-	client.Login(me.BasicUser.Email, me.BasicUser.Password)
+	client.Login(me.BasicUser2.Email, me.BasicUser2.Password)
 	utils.EnableDebugLogForTest()
 }
 
