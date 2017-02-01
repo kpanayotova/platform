@@ -188,8 +188,12 @@ func TestUpdateUserPassword(t *testing.T) {
 	Client := th.Client
 
 	password := "newpassword1"
-	_, resp := Client.UpdateUserPassword(th.BasicUser.Id, th.BasicUser.Password, password)
+	pass, resp := Client.UpdateUserPassword(th.BasicUser.Id, th.BasicUser.Password, password)
 	CheckNoError(t, resp)
+
+	if !pass {
+		t.Fatal("should have returned true")
+	}
 
 	_, resp = Client.UpdateUserPassword(th.BasicUser.Id, password, "")
 	CheckBadRequestStatus(t, resp)

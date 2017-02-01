@@ -213,13 +213,13 @@ func (c *Client4) UpdateUser(user *User) (*User, *Response) {
 }
 
 // UpdateUserPassword updates a user's password.
-func (c *Client4) UpdateUserPassword(userId, currentPassword, newPassword string) (*User, *Response) {
+func (c *Client4) UpdateUserPassword(userId, currentPassword, newPassword string) (bool, *Response) {
 	requestBody := map[string]string{"current_password": currentPassword, "new_password": newPassword}
 	if r, err := c.DoApiPut(c.GetUserRoute(userId)+"/password", MapToJson(requestBody)); err != nil {
-		return nil, &Response{StatusCode: r.StatusCode, Error: err}
+		return false, &Response{StatusCode: r.StatusCode, Error: err}
 	} else {
 		defer closeBody(r)
-		return UserFromJson(r.Body), BuildResponse(r)
+		return CheckStatusOK(r), BuildResponse(r)
 	}
 }
 
